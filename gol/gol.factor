@@ -1,6 +1,6 @@
 ! Copyright (C) 2019 Your name.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: kernel arrays fry sequences locals math ;
+USING: kernel arrays combinators fry sequences locals math math.combinatorics sequences.generalizations math.matrices ;
 IN: gol
 
 : grid ( m n -- seq ) 0 <array> <array> ;
@@ -21,3 +21,44 @@ IN: gol
     if ; recursive flushable
 
 : live ( grid x y -- 'grid ) 2array [ drop 1 ] matrix-fnth ;
+: die ( grid x y -- 'grid ) 2array [ drop 0 ] matrix-fnth ;
+
+: rotate+ ( array -- 'array ) unclip suffix ;
+: rotate- ( array -- 'array ) unclip-last prefix ;
+
+: nrotate ( array n -- 'array ) {
+        { [ dup 0 > ] [ [ rotate+ ] dip 1 - nrotate ] }
+        { [ dup 0 < ] [ [ rotate- ] dip 1 + nrotate ] }
+        [ drop ]
+    } cond ; recursive
+
+: nrotate-d ( grid rots -- 'grid ) dup empty?
+    [ drop ]
+    [ unclip swap [ nrotate ] dip [ nrotate-d ] curry map ]
+    if ; recursive
+
+! : rotations ( grid xforms -- grids ) [ [ nrotate-d ] curry ] map cleave ; inline foldable
+
+: all-rotations ( grid --  'grid ) {
+        [ { 1 1 } nrotate-d ]
+        [ { 1 0 } nrotate-d ]
+        [ { 1 -1 } nrotate-d ]
+        [ { 0 1 } nrotate-d ]
+        [ { 0 0 } nrotate-d ]
+        [ { 0 -1 } nrotate-d ]
+        [ { -1 1 } nrotate-d ]
+        [ { -1 0 } nrotate-d ]
+        [ { -1 -1 } nrotate-d ]
+} cleave 9 narray ; foldable
+
+: m+ms ( ms -- m ) unclip [ m+ ] reduce ;
+
+: next-state-cell ( current neighbours -- next ) {
+        { [ dup 4 = ] [ drop ] }
+        { [ dup 3 = ] [ 2drop 1 ] }
+        [ 2drop 0 ]
+    } cond ;
+
+: next-state ( grid -- grid )
+    dup all-rotations m+ms
+    [ [ next-state-cell ] 2map ] 2map ;
