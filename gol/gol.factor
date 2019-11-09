@@ -12,16 +12,19 @@ IN: gol
 : no-inline-nth ( seq n q -- 'seq ) [| n q | [ n = [ q call( s -- 's ) ] [ ] if ] ] call map-index ;
 :: ::llnth ( seq n q: ( s -- 's ) -- 'seq ) seq [ n = q [ ] if ] map-index ; inline
 : stack-nth ( seq n q -- 'seq ) -rot cut-slice rot swap unclip rot call( s -- 's ) prefix append ;
+: apply-nth ( seq n q -- 'seq ) stack-nth ;
 
-: 2d ( seq n m q -- 'seq ) '[ _ stack-nth ] curry stack-nth ;
+: 2d ( seq n m q -- 'seq ) '[ _ apply-nth ] curry apply-nth ;
 
 : matrix-fnth ( seq coords q -- 'seq ) swap dup length 1 >
-    [ unclip rot '[ _ stack-nth ] curry matrix-fnth ]
-    [ unclip swap drop swap stack-nth ]
+    [ unclip rot '[ _ apply-nth ] curry matrix-fnth ]
+    [ unclip swap drop swap apply-nth ]
     if ; recursive flushable
 
-: live ( grid x y -- 'grid ) 2array [ drop 1 ] matrix-fnth ;
-: die ( grid x y -- 'grid ) 2array [ drop 0 ] matrix-fnth ;
+: map-coords ( grid coords q -- 'grid ) rot swap [ matrix-fnth ] curry reduce ;
+
+: live ( grid x y -- 'grid ) 2array 1array [ drop 1 ] map-coords ;
+: die ( grid x y -- 'grid ) 2array 1array [ drop 0 ] map-coords ;
 
 : rotate+ ( array -- 'array ) unclip suffix ;
 : rotate- ( array -- 'array ) unclip-last prefix ;
